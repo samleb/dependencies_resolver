@@ -1,29 +1,31 @@
-class DependenciesResolver
+class Dependencies
   class CircularDependencyError < RuntimeError; end
+  
+  def Dependencies.[](dependencies)
+    new(dependencies)
+  end
 
   def initialize(dependencies)
     @dependencies = dependencies.to_hash
-    @stack = [ ]
-    @build = [ ]
   end
   
   attr_reader :dependencies
   
-  def resolve(*objects)
-    @stack.clear
-    @build.clear
-    concat_dependencies(*objects)
-    @build.dup
+  def resolve(objects = nil)
+    @stack, @build = [ ], [ ]
+    concat_dependencies(objects || dependencies.keys)
+    @build
   end
   
 private
 
-  def concat_dependencies(*objects)
-    objects.each do |object|
+  def concat_dependencies(objects)
+    objects.uniq.each do |object|
+      next if @build.include?(object)
       ensure_no_circular_dependency!(object)
       object_dependencies = Array(dependencies[object])
       stacking(object) do
-        concat_dependencies(*object_dependencies)
+        concat_dependencies(object_dependencies)
       end
     end
   end
@@ -31,8 +33,7 @@ private
   def stacking(object)
     @stack.push(object)
     yield
-    object = @stack.pop
-    @build << object unless @build.include? object
+    @build << @stack.pop
   end
   
   def ensure_no_circular_dependency!(object)
