@@ -16,7 +16,7 @@ class DependenciesResolverTest < Test::Unit::TestCase
   end
   
   def test_should_accept_multiple_objects
-    assert_nothing_raised { @resolver.resolve(:a, :b) }
+    assert_nothing_raised { @resolver.resolve(:f, :f) }
   end
   
   def test_build_should_contain_unique_objects

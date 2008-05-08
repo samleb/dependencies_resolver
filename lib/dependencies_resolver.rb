@@ -10,9 +10,10 @@ class DependenciesResolver
   attr_reader :dependencies
   
   def resolve(*objects)
+    @stack.clear
     @build.clear
     concat_dependencies(*objects)
-    @build
+    @build.dup
   end
   
 private
@@ -20,27 +21,24 @@ private
   def concat_dependencies(*objects)
     objects.each do |object|
       ensure_no_circular_dependency!(object)
-      push(object)
       object_dependencies = Array(dependencies[object])
-      concat_dependencies(*object_dependencies)
-      pop
+      stacking(object) do
+        concat_dependencies(*object_dependencies)
+      end
     end
   end
   
-  def push(object)
+  def stacking(object)
     @stack.push(object)
-  end
-  
-  def pop
+    yield
     object = @stack.pop
     @build << object unless @build.include? object
   end
   
   def ensure_no_circular_dependency!(object)
     if @stack.member?(object)
-      message = "Circular dependency on #{object.inspect}, dependencies stack : #{@stack.inspect}"
-      @stack.clear
-      raise CircularDependencyError, message
+      raise CircularDependencyError,
+        "Circular dependency on #{object.inspect}, dependencies stack : #{@stack.inspect}"
     end
   end
 end
