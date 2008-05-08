@@ -1,8 +1,14 @@
 class Dependencies
   class CircularDependencyError < RuntimeError; end
   
-  def Dependencies.[](dependencies)
-    new(dependencies)
+  class << Dependencies
+    def [](dependencies)
+      new(dependencies)
+    end
+  
+    def resolve(dependencies)
+      new(dependencies).resolve
+    end
   end
 
   def initialize(dependencies)
@@ -31,7 +37,7 @@ private
   end
   
   def stacking(object)
-    @stack.push(object)
+    @stack << object
     yield
     @build << @stack.pop
   end
