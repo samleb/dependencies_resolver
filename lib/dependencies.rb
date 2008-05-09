@@ -15,37 +15,26 @@ class Dependencies
     @dependencies = dependencies.to_hash
   end
   
-  attr_reader :dependencies
-  
   def resolve(objects = nil)
-    @stack, @build = [ ], [ ]
-    concat_dependencies(objects || dependencies.keys)
-    @build
+    @stack, @list = [], []
+    concat_dependencies(objects || @dependencies.keys)
+    @list
   end
-  
+
 private
 
   def concat_dependencies(objects)
     objects.uniq.each do |object|
-      next if @build.include?(object)
-      ensure_no_circular_dependency!(object)
-      object_dependencies = Array(dependencies[object])
-      stacking(object) do
-        concat_dependencies(object_dependencies)
-      end
+      next if @list.include?(object)
+      raise_circular_dependency_error(object) if @stack.include?(object)
+      @stack << object
+      concat_dependencies(Array(@dependencies[object]))
+      @list << @stack.pop
     end
   end
-  
-  def stacking(object)
-    @stack << object
-    yield
-    @build << @stack.pop
-  end
-  
-  def ensure_no_circular_dependency!(object)
-    if @stack.member?(object)
-      raise CircularDependencyError,
-        "Circular dependency on #{object.inspect}, dependencies stack : #{@stack.inspect}"
-    end
+
+  def raise_circular_dependency_error(object)
+    raise CircularDependencyError,
+      "Circular dependency on #{object.inspect}, dependencies stack : #{@stack.inspect}"
   end
 end
